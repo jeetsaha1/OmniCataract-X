@@ -1,0 +1,12 @@
+{
+  "thresholds": {
+    "mild_upper": 0.2858840525150299,
+    "moderate_upper": 0.4860583543777466
+  },
+  "cross_validation": {
+    "spearman_rho": 0.5312541319761284,
+    "p_value": 0.0
+  },
+  "n_images": 12784,
+  "n_positive": 4202
+}
