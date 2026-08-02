@@ -3,7 +3,6 @@ OmniCataract-X - FastAPI Backend for Render Deployment
 """
 import os
 import io
-import json
 import importlib.util
 from pathlib import Path
 from typing import Optional
@@ -30,7 +29,6 @@ DISCLAIMER_TEXT = (
     "not a clinically validated LOCS III grade."
 )
 
-QUALITY_GATE_THRESHOLD = 0.7
 MAX_IMAGE_DIMENSION = 4096
 MIN_IMAGE_DIMENSION = 100
 
@@ -41,10 +39,10 @@ app = FastAPI(
     version="3.0"
 )
 
-# CORS - Update this with your actual frontend URL in production
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict this in production!
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -67,7 +65,6 @@ class PredictionResponse(BaseModel):
     message: str
 
 def validate_uploaded_image(file_bytes: bytes) -> Image.Image:
-    """Validate and load uploaded image"""
     try:
         image = Image.open(io.BytesIO(file_bytes))
         image.verify()
@@ -101,23 +98,16 @@ async def health_check():
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(file: UploadFile = File(...)):
-    """
-    Predict cataract from uploaded fundus image
-    """
     file_bytes = await file.read()
     image = validate_uploaded_image(file_bytes)
-    
-    # Run inference
     result = detector.predict(image)
     
-    # Build message
     if result["quality_status"] == "poor":
-        message = "Image quality appears too low for a reliable assessment. Please retake the photo with better lighting and focus."
+        message = "Image quality appears too low for a reliable assessment. Please retake the photo."
     elif not result["cataract_detected"]:
         message = "No cataract detected. This is a screening result, not a diagnosis."
     else:
-        message = (f"Cataract detected with {result['severity_grade'].lower()} severity "
-                  f"(proxy score, not a clinical grade). Please consult an ophthalmologist.")
+        message = f"Cataract detected with {result['severity_grade'].lower()} severity. Please consult an ophthalmologist."
     
     result["message"] = message
     return result

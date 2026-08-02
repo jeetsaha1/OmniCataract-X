@@ -1,11 +1,12 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
-onnx>=1.14.0
 onnxruntime>=1.15.0
+onnx>=1.14.0
 pillow>=9.0.0
 numpy>=1.24.0,<2.0.0
 timm>=0.9.0
---extra-index-url https://download.pytorch.org/whl/cpu
 torch>=2.0.0
 python-multipart>=0.0.6
 pydantic>=2.5.0
