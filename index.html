@@ -102,6 +102,12 @@
         min-height: 120px;
       }
 
+      .upload-card.dragover {
+        border-color: #38bdf8;
+        background: rgba(14, 165, 233, 0.18);
+        transform: translateY(-1px);
+      }
+
       .upload-card:hover {
         border-color: #38bdf8;
       }
@@ -190,6 +196,19 @@
         border-radius: 16px;
       }
 
+      .heatmap-caption {
+        margin-top: 8px;
+        color: #94a3b8;
+        font-size: 0.88rem;
+      }
+
+      .hint-list {
+        margin: 10px 0 0;
+        padding-left: 18px;
+        color: #94a3b8;
+        font-size: 0.9rem;
+      }
+
       .actions {
         display: flex;
         gap: 12px;
@@ -244,11 +263,18 @@
       <div class="workspace">
         <section class="panel">
           <h2>Input</h2>
-          <label class="upload-card" for="imageInput">
+          <label id="dropZone" class="upload-card" for="imageInput">
             <input id="imageInput" type="file" accept="image/*" />
             <span id="uploadHint">Choose an image</span>
             <span class="muted">PNG, JPG, JPEG supported</span>
+            <span class="muted">Drag and drop an image file or image URL from another site</span>
           </label>
+
+          <ul class="hint-list">
+            <li>Drop a local file directly onto the box.</li>
+            <li>Or drag an image from another website and drop it here.</li>
+            <li>If the site blocks access to the image URL, the browser may refuse the fetch.</li>
+          </ul>
 
           <img id="preview" alt="Preview" hidden />
 
@@ -293,6 +319,7 @@
             <img id="heatmapPreview" alt="Heatmap preview" hidden />
             <span id="heatmapPlaceholder">Grad-CAM heatmap or visual output can be shown here</span>
           </div>
+          <div id="heatmapCaption" class="heatmap-caption">Heatmap will appear here if the backend returns it.</div>
         </section>
       </div>
     </main>
@@ -301,6 +328,7 @@
       const backendUrl = "https://omnicataract-x-api.onrender.com";
 
       const imageInput = document.getElementById("imageInput");
+      const dropZone = document.getElementById("dropZone");
       const uploadHint = document.getElementById("uploadHint");
       const preview = document.getElementById("preview");
       const analyzeBtn = document.getElementById("analyzeBtn");
@@ -314,15 +342,43 @@
       const severityValue = document.getElementById("severityValue");
       const heatmapPreview = document.getElementById("heatmapPreview");
       const heatmapPlaceholder = document.getElementById("heatmapPlaceholder");
+      const heatmapCaption = document.getElementById("heatmapCaption");
 
       let selectedFile = null;
 
-      imageInput.addEventListener("change", (event) => {
-        const file = event.target.files?.[0];
+      async function loadImageFromUrl(url, suggestedName = "dropped-image") {
+        const candidates = [
+          url,
+          `https://images.weserv.nl/?url=${encodeURIComponent(url)}`,
+        ];
+
+        let lastError = null;
+        for (const candidate of candidates) {
+          try {
+            const response = await fetch(candidate, { mode: "cors" });
+            if (!response.ok) {
+              throw new Error(`Could not load image from URL (${response.status})`);
+            }
+
+            const blob = await response.blob();
+            if (!blob.type.startsWith("image/")) {
+              throw new Error("Dropped URL did not resolve to an image.");
+            }
+
+            return new File([blob], suggestedName, { type: blob.type });
+          } catch (error) {
+            lastError = error;
+          }
+        }
+
+        throw lastError || new Error("Could not load image from the dropped URL.");
+      }
+
+      async function setSelectedFile(file) {
         if (!file) return;
 
         selectedFile = file;
-        uploadHint.textContent = file.name;
+        uploadHint.textContent = file.name || "Dropped image";
 
         const reader = new FileReader();
         reader.onload = () => {
@@ -330,6 +386,61 @@
           preview.hidden = false;
         };
         reader.readAsDataURL(file);
+      }
+
+      function extractUrlFromHtml(htmlText) {
+        const doc = new DOMParser().parseFromString(htmlText, "text/html");
+        const img = doc.querySelector("img");
+        return img?.src || null;
+      }
+
+      dropZone.addEventListener("dragenter", () => {
+        dropZone.classList.add("dragover");
+      });
+
+      dropZone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+
+      dropZone.addEventListener("dragleave", (event) => {
+        if (!dropZone.contains(event.relatedTarget)) {
+          dropZone.classList.remove("dragover");
+        }
+      });
+
+      dropZone.addEventListener("drop", async (event) => {
+        event.preventDefault();
+        dropZone.classList.remove("dragover");
+
+        try {
+          const files = event.dataTransfer?.files;
+          if (files && files.length > 0) {
+            await setSelectedFile(files[0]);
+            return;
+          }
+
+          const plainText = event.dataTransfer?.getData("text/plain");
+          const uriList = event.dataTransfer?.getData("text/uri-list");
+          const htmlText = event.dataTransfer?.getData("text/html");
+
+          const candidateUrl = uriList || plainText || (htmlText ? extractUrlFromHtml(htmlText) : null);
+          if (!candidateUrl || !/^https?:\/\//i.test(candidateUrl)) {
+            throw new Error("Could not detect an image URL from the dropped content.");
+          }
+
+          const file = await loadImageFromUrl(candidateUrl, "dropped-image");
+          await setSelectedFile(file);
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      imageInput.addEventListener("change", (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setSelectedFile(file);
       });
 
       analyzeBtn.addEventListener("click", async () => {
@@ -362,8 +473,16 @@
           confidenceValue.textContent = `${(result.cataract_confidence * 100).toFixed(1)}%`;
           confidenceBar.style.width = `${Math.max(0, Math.min(100, result.cataract_confidence * 100))}%`;
           severityValue.textContent = result.severity_grade || "-";
-          heatmapPlaceholder.hidden = false;
-          heatmapPreview.hidden = true;
+          if (result.heatmap_base64) {
+            heatmapPreview.src = `data:image/png;base64,${result.heatmap_base64}`;
+            heatmapPreview.hidden = false;
+            heatmapPlaceholder.hidden = true;
+            heatmapCaption.textContent = "Grad-CAM heatmap returned by the backend.";
+          } else {
+            heatmapPreview.hidden = true;
+            heatmapPlaceholder.hidden = false;
+            heatmapCaption.textContent = "Backend did not return a heatmap for this image.";
+          }
           resultText.innerHTML = `
             <p><strong>Cataract detected:</strong> ${result.cataract_detected ? "Yes" : "No"}</p>
             <p><strong>Confidence:</strong> ${(result.cataract_confidence * 100).toFixed(1)}%</p>
@@ -385,6 +504,7 @@
         uploadHint.textContent = "Choose an image";
         preview.hidden = true;
         preview.removeAttribute("src");
+        dropZone.classList.remove("dragover");
         resultBox.hidden = true;
         resultText.textContent = "";
         cataractValue.textContent = "-";
@@ -392,6 +512,10 @@
         confidenceValue.textContent = "-";
         confidenceBar.style.width = "0%";
         severityValue.textContent = "-";
+        heatmapPreview.hidden = true;
+        heatmapPreview.removeAttribute("src");
+        heatmapPlaceholder.hidden = false;
+        heatmapCaption.textContent = "Heatmap will appear here if the backend returns it.";
       });
     </script>
   </body>
