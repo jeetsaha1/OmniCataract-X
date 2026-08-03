@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OmniCataract-X</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>OmniCataract-X</h1>
+      <p class="subtitle">Upload a fundus image to run the cataract screening analysis.</p>
+
+      <label class="upload-card" for="imageInput">
+        <input id="imageInput" type="file" accept="image/*" />
+        <span id="uploadHint">Choose an image</span>
+      </label>
+
+      <img id="preview" alt="Preview" hidden />
+
+      <button id="analyzeBtn" type="button">Analyze</button>
+
+      <section id="resultBox" class="result-box" hidden>
+        <h2>Result</h2>
+        <div id="resultText"></div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

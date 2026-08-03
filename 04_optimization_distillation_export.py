@@ -685,7 +685,7 @@ class CataractDetectorONNX:
         severity_score = float(severity[0])
 
         return {
-            "cataract_detected": cataract_prob >= 0.5,
+            "cataract_detected": cataract_prob >= 0.2,
             "cataract_confidence": cataract_prob,
             "quality_score": quality_prob,
             "quality_status": "good" if quality_prob >= 0.7 else "poor",
