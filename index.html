@@ -27,12 +27,37 @@
       }
 
       .container {
-        width: min(92vw, 760px);
+        width: min(94vw, 1180px);
         background: rgba(15, 23, 42, 0.9);
         border: 1px solid rgba(148, 163, 184, 0.2);
         border-radius: 20px;
         padding: 28px;
         box-shadow: 0 20px 50px rgba(0, 0, 0, 0.32);
+      }
+
+      .hero {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      .hero-copy {
+        max-width: 680px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(14, 165, 233, 0.14);
+        color: #7dd3fc;
+        font-size: 0.9rem;
+        border: 1px solid rgba(125, 211, 252, 0.22);
+        margin-bottom: 16px;
       }
 
       h1 {
@@ -43,6 +68,25 @@
       .subtitle {
         color: #cbd5e1;
         margin: 0 0 22px;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .panel {
+        background: rgba(17, 24, 39, 0.92);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 18px;
+        padding: 18px;
+      }
+
+      .panel h2 {
+        margin: 0 0 14px;
+        font-size: 1.1rem;
       }
 
       .upload-card {
@@ -62,6 +106,19 @@
         border-color: #38bdf8;
       }
 
+      .upload-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+      }
+
+      .ghost-btn {
+        background: rgba(37, 99, 235, 0.12);
+        border: 1px solid rgba(96, 165, 250, 0.28);
+        color: #bfdbfe;
+      }
+
       .upload-card input {
         display: none;
       }
@@ -74,6 +131,63 @@
         margin: 18px 0 0;
         border-radius: 14px;
         background: rgba(15, 23, 42, 0.5);
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .metric {
+        padding: 14px;
+        border-radius: 14px;
+        background: rgba(30, 41, 59, 0.72);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+      }
+
+      .metric-label {
+        color: #94a3b8;
+        font-size: 0.86rem;
+        margin-bottom: 6px;
+      }
+
+      .metric-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+      }
+
+      .bar {
+        margin-top: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.18);
+        overflow: hidden;
+      }
+
+      .bar > span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #22c55e, #f59e0b, #ef4444);
+      }
+
+      .heatmap-box {
+        margin-top: 14px;
+        min-height: 280px;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        background: rgba(17, 24, 39, 0.72);
+        display: grid;
+        place-items: center;
+        color: #94a3b8;
+      }
+
+      .heatmap-box img {
+        width: 100%;
+        max-height: 280px;
+        object-fit: contain;
+        border-radius: 16px;
       }
 
       .actions {
@@ -119,25 +233,68 @@
   </head>
   <body>
     <main class="container">
-      <h1>OmniCataract-X</h1>
-      <p class="subtitle">Upload a fundus image to run the cataract screening analysis.</p>
-
-      <label class="upload-card" for="imageInput">
-        <input id="imageInput" type="file" accept="image/*" />
-        <span id="uploadHint">Choose an image</span>
-      </label>
-
-      <img id="preview" alt="Preview" hidden />
-
-      <div class="actions">
-        <button id="analyzeBtn" type="button">Analyze</button>
-        <span class="muted">Backend: Render API</span>
+      <div class="hero">
+        <div class="hero-copy">
+          <div class="badge">Research prototype · Backend connected</div>
+          <h1>OmniCataract-X</h1>
+          <p class="subtitle">Upload a fundus image to run the cataract screening analysis, see the prediction summary, and inspect the visual output.</p>
+        </div>
       </div>
 
-      <section id="resultBox" class="result-box" hidden>
-        <h2>Result</h2>
-        <div id="resultText"></div>
-      </section>
+      <div class="workspace">
+        <section class="panel">
+          <h2>Input</h2>
+          <label class="upload-card" for="imageInput">
+            <input id="imageInput" type="file" accept="image/*" />
+            <span id="uploadHint">Choose an image</span>
+            <span class="muted">PNG, JPG, JPEG supported</span>
+          </label>
+
+          <img id="preview" alt="Preview" hidden />
+
+          <div class="upload-actions">
+            <button id="analyzeBtn" type="button">Analyze</button>
+            <button id="clearBtn" type="button" class="ghost-btn">Clear</button>
+          </div>
+
+          <div class="actions">
+            <span class="muted">Backend: Render API</span>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Results</h2>
+          <div class="metrics">
+            <div class="metric">
+              <div class="metric-label">Cataract</div>
+              <div id="cataractValue" class="metric-value">-</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Quality</div>
+              <div id="qualityValue" class="metric-value">-</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Confidence</div>
+              <div id="confidenceValue" class="metric-value">-</div>
+              <div class="bar"><span id="confidenceBar" style="width:0%"></span></div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Severity</div>
+              <div id="severityValue" class="metric-value">-</div>
+            </div>
+          </div>
+
+          <div id="resultBox" class="result-box" hidden>
+            <h2>Message</h2>
+            <div id="resultText"></div>
+          </div>
+
+          <div class="heatmap-box">
+            <img id="heatmapPreview" alt="Heatmap preview" hidden />
+            <span id="heatmapPlaceholder">Grad-CAM heatmap or visual output can be shown here</span>
+          </div>
+        </section>
+      </div>
     </main>
 
     <script>
@@ -149,6 +306,14 @@
       const analyzeBtn = document.getElementById("analyzeBtn");
       const resultBox = document.getElementById("resultBox");
       const resultText = document.getElementById("resultText");
+      const clearBtn = document.getElementById("clearBtn");
+      const cataractValue = document.getElementById("cataractValue");
+      const qualityValue = document.getElementById("qualityValue");
+      const confidenceValue = document.getElementById("confidenceValue");
+      const confidenceBar = document.getElementById("confidenceBar");
+      const severityValue = document.getElementById("severityValue");
+      const heatmapPreview = document.getElementById("heatmapPreview");
+      const heatmapPlaceholder = document.getElementById("heatmapPlaceholder");
 
       let selectedFile = null;
 
@@ -192,6 +357,13 @@
           }
 
           const result = await response.json();
+          cataractValue.textContent = result.cataract_detected ? "Yes" : "No";
+          qualityValue.textContent = (result.quality_status || "-").toUpperCase();
+          confidenceValue.textContent = `${(result.cataract_confidence * 100).toFixed(1)}%`;
+          confidenceBar.style.width = `${Math.max(0, Math.min(100, result.cataract_confidence * 100))}%`;
+          severityValue.textContent = result.severity_grade || "-";
+          heatmapPlaceholder.hidden = false;
+          heatmapPreview.hidden = true;
           resultText.innerHTML = `
             <p><strong>Cataract detected:</strong> ${result.cataract_detected ? "Yes" : "No"}</p>
             <p><strong>Confidence:</strong> ${(result.cataract_confidence * 100).toFixed(1)}%</p>
@@ -201,9 +373,25 @@
           `;
         } catch (error) {
           resultText.textContent = `Error: ${error.message}`;
+          confidenceBar.style.width = "0%";
         } finally {
           analyzeBtn.disabled = false;
         }
+      });
+
+      clearBtn.addEventListener("click", () => {
+        selectedFile = null;
+        imageInput.value = "";
+        uploadHint.textContent = "Choose an image";
+        preview.hidden = true;
+        preview.removeAttribute("src");
+        resultBox.hidden = true;
+        resultText.textContent = "";
+        cataractValue.textContent = "-";
+        qualityValue.textContent = "-";
+        confidenceValue.textContent = "-";
+        confidenceBar.style.width = "0%";
+        severityValue.textContent = "-";
       });
     </script>
   </body>
